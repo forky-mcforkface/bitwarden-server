@@ -68,7 +68,6 @@ public class OrganizationUsersController : BaseAdminConsoleController
     private readonly ICurrentContext _currentContext;
     private readonly ICountNewSmSeatsRequiredQuery _countNewSmSeatsRequiredQuery;
     private readonly IUpdateSecretsManagerSubscriptionCommand _updateSecretsManagerSubscriptionCommand;
-    private readonly IUpdateOrganizationUserCommand _updateOrganizationUserCommand;
     private readonly IAcceptOrgUserCommand _acceptOrgUserCommand;
     private readonly IAuthorizationService _authorizationService;
     private readonly ISsoConfigRepository _ssoConfigRepository;
@@ -94,7 +93,6 @@ public class OrganizationUsersController : BaseAdminConsoleController
     private readonly IAcceptOrganizationInviteLinkCommand _acceptOrganizationInviteLinkCommand;
     private readonly IConfirmOrganizationInviteLinkCommand _confirmOrganizationInviteLinkCommand;
     private readonly IGetOrganizationInviteCommand _getOrganizationInviteCommand;
-    private readonly Bitwarden.Server.Sdk.Features.IFeatureService _featureService;
     private readonly V2_UpdateUserCommand.IUpdateOrganizationUserCommand _updateOrganizationUserCommandVNext;
     private readonly IGlobalSettings _globalSettings;
 
@@ -107,7 +105,6 @@ public class OrganizationUsersController : BaseAdminConsoleController
         ICurrentContext currentContext,
         ICountNewSmSeatsRequiredQuery countNewSmSeatsRequiredQuery,
         IUpdateSecretsManagerSubscriptionCommand updateSecretsManagerSubscriptionCommand,
-        IUpdateOrganizationUserCommand updateOrganizationUserCommand,
         IAcceptOrgUserCommand acceptOrgUserCommand,
         IAuthorizationService authorizationService,
         ISsoConfigRepository ssoConfigRepository,
@@ -133,7 +130,6 @@ public class OrganizationUsersController : BaseAdminConsoleController
         IAcceptOrganizationInviteLinkCommand acceptOrganizationInviteLinkCommand,
         IConfirmOrganizationInviteLinkCommand confirmOrganizationInviteLinkCommand,
         IGetOrganizationInviteCommand getOrganizationInviteCommand,
-        Bitwarden.Server.Sdk.Features.IFeatureService featureService,
         V2_UpdateUserCommand.IUpdateOrganizationUserCommand updateOrganizationUserCommandVNext,
         IGlobalSettings globalSettings)
     {
@@ -146,7 +142,6 @@ public class OrganizationUsersController : BaseAdminConsoleController
         _currentContext = currentContext;
         _countNewSmSeatsRequiredQuery = countNewSmSeatsRequiredQuery;
         _updateSecretsManagerSubscriptionCommand = updateSecretsManagerSubscriptionCommand;
-        _updateOrganizationUserCommand = updateOrganizationUserCommand;
         _acceptOrgUserCommand = acceptOrgUserCommand;
         _authorizationService = authorizationService;
         _ssoConfigRepository = ssoConfigRepository;
@@ -172,7 +167,6 @@ public class OrganizationUsersController : BaseAdminConsoleController
         _acceptOrganizationInviteLinkCommand = acceptOrganizationInviteLinkCommand;
         _confirmOrganizationInviteLinkCommand = confirmOrganizationInviteLinkCommand;
         _getOrganizationInviteCommand = getOrganizationInviteCommand;
-        _featureService = featureService;
         _updateOrganizationUserCommandVNext = updateOrganizationUserCommandVNext;
         _globalSettings = globalSettings;
     }
@@ -443,7 +437,7 @@ public class OrganizationUsersController : BaseAdminConsoleController
             throw new NotFoundException();
         }
 
-        var userId = _userService.GetProperUserId(User).Value;
+        var userId = _userService.GetProperUserId(User)!.Value;
         var editingSelf = userId == organizationUser.UserId;
 
         // Authorization check:
@@ -453,41 +447,30 @@ public class OrganizationUsersController : BaseAdminConsoleController
             ? null
             : model.Groups;
 
-        var existingUserType = organizationUser.Type;
-
         var collectionAccessToSave = await GetAuthorizedCollectionsToSaveAsync(model, currentAccess, editingSelf, organization);
 
-        if (_featureService.IsEnabled(FeatureFlagKeys.ChangeMemberEmailNoMp))
-        {
+        var actingContext = _currentContext.GetOrganization(organization.Id);
 
-            var actingContext = _currentContext.GetOrganization(organization.Id);
+        var request = new V2_UpdateUserCommand.UpdateOrganizationUserRequest(
+            organizationUser,
+            organization,
+            model.Type!.Value,
+            model.Permissions,
+            model.AccessSecretsManager,
+            model.AccessPam,
+            collectionAccessToSave,
+            groupsToSave,
+            model.Email,
+            model.Name,
+            model.DefaultUserCollectionName,
+            new StandardUser(
+                userId,
+                await _currentContext.OrganizationOwner(organization.Id),
+                actingContext?.Type,
+                actingContext?.Permissions));
 
-            var request = new V2_UpdateUserCommand.UpdateOrganizationUserRequest(
-                organizationUser,
-                organization,
-                model.Type.Value,
-                model.Permissions,
-                model.AccessSecretsManager,
-                model.AccessPam,
-                collectionAccessToSave,
-                groupsToSave,
-                model.Email,
-                model.Name,
-                model.DefaultUserCollectionName,
-                new StandardUser(
-                    userId,
-                    await _currentContext.OrganizationOwner(organization.Id),
-                    actingContext?.Type,
-                    actingContext?.Permissions));
-
-            var result = await _updateOrganizationUserCommandVNext.UpdateUserAsync(request);
-            return Handle(result);
-        }
-
-        await _updateOrganizationUserCommand.UpdateUserAsync(model.ToOrganizationUser(organizationUser), existingUserType, userId,
-            collectionAccessToSave, groupsToSave, model.DefaultUserCollectionName);
-
-        return TypedResults.Ok();
+        var result = await _updateOrganizationUserCommandVNext.UpdateUserAsync(request);
+        return Handle(result);
     }
 
     /// <summary>
