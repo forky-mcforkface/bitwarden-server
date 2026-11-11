@@ -49,11 +49,11 @@
       },
       "Microsoft.AspNetCore.SignalR.StackExchangeRedis": {
         "type": "Direct",
-        "requested": "[10.0.10, 10.0.10]",
-        "resolved": "10.0.10",
-        "contentHash": "mC/dQrt0Etdc9B1hdNy7KDO/E43FfhzHgMajw6Lupryp8XL7B7/3aEN3Zqfagz7LKTbDZadfMvT+XG8flLkKJA==",
+        "requested": "[10.0.15, 10.0.15]",
+        "resolved": "10.0.15",
+        "contentHash": "84yj3vuRGqOzjN+E0ZJXa2oR8cVRYNNnraJDV+ISWajYS6SFmqsSgln2v0ixIZi391ESYnqBbh0NK6nxHLR9YQ==",
         "dependencies": {
-          "MessagePack": "2.5.302",
+          "MessagePack": "2.5.303",
           "StackExchange.Redis": "2.7.27"
         }
       },
