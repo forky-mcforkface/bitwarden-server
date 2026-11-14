@@ -4,11 +4,13 @@
     "net10.0": {
       "AutoMapper": {
         "type": "Direct",
-        "requested": "[14.0.0, 14.0.0]",
-        "resolved": "14.0.0",
-        "contentHash": "OC+1neAPM4oCCqQj3g2GJ2shziNNhOkxmNB9cVS8jtx4JbgmRzLcUOxB9Tsz6cVPHugdkHgCaCrTjjSI0Z5sCQ==",
+        "requested": "[15.1.4, 15.1.4]",
+        "resolved": "15.1.4",
+        "contentHash": "a8glKpFJM6GWshSKzeoF20IkbksZJ1gIAEblz9pit9KIbM191nAQq90hjm8i0PHlB7Pq34jssH/edU32iVkzmQ==",
         "dependencies": {
-          "Microsoft.Extensions.Options": "8.0.0"
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
+          "Microsoft.Extensions.Options": "8.0.0",
+          "Microsoft.IdentityModel.JsonWebTokens": "8.14.0"
         }
       },
       "linq2db": {
